@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RankingEngineTest {
@@ -89,6 +90,30 @@ class RankingEngineTest {
         engine.update("alice", points -> 20);
 
         assertEquals(List.of("bob", "alice"), keys(engine.ranking()));
+    }
+
+    @Test
+    void addingAnExistingKeyIsRejectedAndKeepsTheOriginalEntry() {
+        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+        engine.add("alice", 10);
+
+        EntryAlreadyExistsException thrown =
+                assertThrows(EntryAlreadyExistsException.class, () -> engine.add("alice", 99));
+
+        assertEquals("alice", thrown.key());
+        assertEquals(1, engine.ranking().size());
+        assertEquals(10, engine.ranking().get(0).value());
+    }
+
+    @Test
+    void updatingAnUnknownKeyIsRejected() {
+        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+
+        EntryNotFoundException thrown =
+                assertThrows(EntryNotFoundException.class, () -> engine.update("ghost", points -> 1));
+
+        assertEquals("ghost", thrown.key());
+        assertTrue(engine.ranking().isEmpty());
     }
 
     private static List<String> keys(List<RankedEntry<String, Integer>> ranking) {
