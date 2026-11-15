@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class RankingEngineTest {
 
     private static final Comparator<RankedEntry<String, Integer>> HIGHEST_POINTS_FIRST =
-            (a, b) -> Integer.compare(b.value(), a.value());
+            Orderings.highestFirst(points -> points);
 
     @Test
     void newEngineHasEmptyRanking() {
