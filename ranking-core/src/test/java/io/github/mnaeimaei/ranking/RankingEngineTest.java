@@ -182,6 +182,19 @@ class RankingEngineTest {
         assertEquals(1, engine.size());
     }
 
+    @Test
+    void nullsAreRejectedAtTheBoundary() {
+        RankingEngine<String, Integer> engine = pointsEngine();
+        engine.add("alice", 10);
+
+        assertThrows(NullPointerException.class, () -> new RankingEngine<String, Integer>(null));
+        assertThrows(NullPointerException.class, () -> engine.add(null, 1));
+        assertThrows(NullPointerException.class, () -> engine.add("bob", null));
+        assertThrows(NullPointerException.class, () -> engine.update("alice", null));
+        assertThrows(NullPointerException.class, () -> engine.update("alice", points -> null));
+        assertEquals(Optional.of(10), engine.find("alice"));
+    }
+
     private static RankingEngine<String, Integer> pointsEngine() {
         return new RankingEngine<>(HIGHEST_POINTS_FIRST);
     }
