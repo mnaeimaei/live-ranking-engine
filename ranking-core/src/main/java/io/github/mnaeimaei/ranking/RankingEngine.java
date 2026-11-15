@@ -35,6 +35,14 @@ public final class RankingEngine<K, V> {
         return updated.value();
     }
 
+    public V remove(K key) {
+        RankedEntry<K, V> removed = entries.remove(key);
+        if (removed == null) {
+            throw new EntryNotFoundException(key);
+        }
+        return removed.value();
+    }
+
     public List<RankedEntry<K, V>> ranking() {
         List<RankedEntry<K, V>> ranking = new ArrayList<>(entries.values());
         ranking.sort(ordering);
