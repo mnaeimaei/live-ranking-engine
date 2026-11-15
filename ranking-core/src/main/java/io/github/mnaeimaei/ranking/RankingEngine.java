@@ -8,12 +8,13 @@ import java.util.Map;
 
 public final class RankingEngine<K, V> {
 
-    private final Comparator<? super RankedEntry<K, V>> ordering;
+    private final Comparator<RankedEntry<K, V>> ordering;
     private final Map<K, RankedEntry<K, V>> entries = new HashMap<>();
     private long nextSequence = 0;
 
     public RankingEngine(Comparator<? super RankedEntry<K, V>> ordering) {
-        this.ordering = ordering;
+        Comparator<RankedEntry<K, V>> callerOrdering = ordering::compare;
+        this.ordering = callerOrdering.thenComparingLong(RankedEntry::sequence);
     }
 
     public void add(K key, V value) {
