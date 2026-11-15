@@ -14,6 +14,11 @@ public final class NbaScoreboard {
         games.add(fixture, new Game(fixture, Score.ZERO));
     }
 
+    public Game updateScore(Team home, Team away, int homePoints, int awayPoints) {
+        Score score = new Score(homePoints, awayPoints);
+        return games.update(new Fixture(home, away), game -> new Game(game.fixture(), score));
+    }
+
     public List<Game> summary() {
         return games.ranking().stream().map(RankedEntry::value).toList();
     }
