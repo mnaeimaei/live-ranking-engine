@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -156,6 +157,29 @@ class RankingEngineTest {
 
         assertEquals(List.of(new RankedEntry<>("alice", 10, 0)), snapshot);
         assertThrows(UnsupportedOperationException.class, () -> snapshot.clear());
+    }
+
+    @Test
+    void topReturnsAtMostTheRequestedNumberOfLeaders() {
+        RankingEngine<String, Integer> engine = pointsEngine();
+        engine.add("alice", 10);
+        engine.add("bob", 30);
+        engine.add("carol", 20);
+
+        assertEquals(List.of("bob", "carol"), keys(engine.top(2)));
+        assertEquals(3, engine.top(10).size());
+        assertTrue(engine.top(0).isEmpty());
+        assertThrows(IllegalArgumentException.class, () -> engine.top(-1));
+    }
+
+    @Test
+    void findLooksUpTheCurrentValueOfAKey() {
+        RankingEngine<String, Integer> engine = pointsEngine();
+        engine.add("alice", 10);
+
+        assertEquals(Optional.of(10), engine.find("alice"));
+        assertEquals(Optional.empty(), engine.find("ghost"));
+        assertEquals(1, engine.size());
     }
 
     private static RankingEngine<String, Integer> pointsEngine() {
