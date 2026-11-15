@@ -22,6 +22,10 @@ public final class NbaScoreboard {
         return games.update(new Fixture(home, away), game -> new Game(game.fixture(), score));
     }
 
+    public Game finishGame(Team home, Team away) {
+        return games.remove(new Fixture(home, away));
+    }
+
     public List<Game> summary() {
         return games.ranking().stream().map(RankedEntry::value).toList();
     }
