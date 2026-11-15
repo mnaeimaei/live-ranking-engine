@@ -1,5 +1,6 @@
 package io.github.mnaeimaei.ranking.nba;
 
+import io.github.mnaeimaei.ranking.Orderings;
 import io.github.mnaeimaei.ranking.RankedEntry;
 import io.github.mnaeimaei.ranking.RankingEngine;
 
@@ -7,7 +8,9 @@ import java.util.List;
 
 public final class NbaScoreboard {
 
-    private final RankingEngine<Fixture, Game> games = new RankingEngine<>((a, b) -> 0);
+    private final RankingEngine<Fixture, Game> games = new RankingEngine<>(
+            Orderings.<Fixture, Game>highestFirst(game -> game.score().total())
+                    .thenComparing(Orderings.mostRecentFirst()));
 
     public void startGame(Team home, Team away) {
         Fixture fixture = new Fixture(home, away);
