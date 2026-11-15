@@ -70,7 +70,7 @@ class RankingEngineConcurrencyTest {
             }
         } finally {
             pool.shutdownNow();
-            assertTrue(pool.awaitTermination(5, TimeUnit.SECONDS));
         }
+        assertTrue(pool.awaitTermination(5, TimeUnit.SECONDS));
     }
 }
