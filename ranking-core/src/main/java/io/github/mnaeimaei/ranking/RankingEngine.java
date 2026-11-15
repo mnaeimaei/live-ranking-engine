@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 public final class RankingEngine<K, V> {
 
@@ -38,14 +39,14 @@ public final class RankingEngine<K, V> {
     }
 
     public List<RankedEntry<K, V>> ranking() {
-        return entries.values().stream().sorted(ordering).toList();
+        return sorted().toList();
     }
 
     public List<RankedEntry<K, V>> top(int limit) {
         if (limit < 0) {
             throw new IllegalArgumentException("limit must not be negative: " + limit);
         }
-        return entries.values().stream().sorted(ordering).limit(limit).toList();
+        return sorted().limit(limit).toList();
     }
 
     public Optional<V> find(K key) {
@@ -54,6 +55,10 @@ public final class RankingEngine<K, V> {
 
     public int size() {
         return entries.size();
+    }
+
+    private Stream<RankedEntry<K, V>> sorted() {
+        return entries.values().stream().sorted(ordering);
     }
 
     private RankedEntry<K, V> requireEntry(K key) {
