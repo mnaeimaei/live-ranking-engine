@@ -16,14 +16,14 @@ class RankingEngineTest {
 
     @Test
     void newEngineHasEmptyRanking() {
-        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+        RankingEngine<String, Integer> engine = pointsEngine();
 
         assertTrue(engine.ranking().isEmpty());
     }
 
     @Test
     void addedEntryAppearsInRanking() {
-        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+        RankingEngine<String, Integer> engine = pointsEngine();
 
         engine.add("alice", 10);
 
@@ -35,7 +35,7 @@ class RankingEngineTest {
 
     @Test
     void rankingFollowsTheGivenOrdering() {
-        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+        RankingEngine<String, Integer> engine = pointsEngine();
 
         engine.add("alice", 10);
         engine.add("bob", 30);
@@ -46,8 +46,7 @@ class RankingEngineTest {
 
     @Test
     void mostRecentFirstBreaksTiesInFavourOfTheLatestAddedEntry() {
-        RankingEngine<String, Integer> engine =
-                new RankingEngine<>(HIGHEST_POINTS_FIRST.thenComparing(Orderings.mostRecentFirst()));
+        RankingEngine<String, Integer> engine = pointsThenRecencyEngine();
 
         engine.add("alice", 20);
         engine.add("bob", 20);
@@ -69,7 +68,7 @@ class RankingEngineTest {
 
     @Test
     void updateChangesTheValueAndReranks() {
-        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+        RankingEngine<String, Integer> engine = pointsEngine();
         engine.add("alice", 10);
         engine.add("bob", 12);
 
@@ -82,8 +81,7 @@ class RankingEngineTest {
 
     @Test
     void updateKeepsTheOriginalInsertionSequence() {
-        RankingEngine<String, Integer> engine =
-                new RankingEngine<>(HIGHEST_POINTS_FIRST.thenComparing(Orderings.mostRecentFirst()));
+        RankingEngine<String, Integer> engine = pointsThenRecencyEngine();
         engine.add("alice", 10);
         engine.add("bob", 20);
 
@@ -94,7 +92,7 @@ class RankingEngineTest {
 
     @Test
     void addingAnExistingKeyIsRejectedAndKeepsTheOriginalEntry() {
-        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+        RankingEngine<String, Integer> engine = pointsEngine();
         engine.add("alice", 10);
 
         EntryAlreadyExistsException thrown =
@@ -107,7 +105,7 @@ class RankingEngineTest {
 
     @Test
     void updatingAnUnknownKeyIsRejected() {
-        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+        RankingEngine<String, Integer> engine = pointsEngine();
 
         EntryNotFoundException thrown =
                 assertThrows(EntryNotFoundException.class, () -> engine.update("ghost", points -> 1));
@@ -118,7 +116,7 @@ class RankingEngineTest {
 
     @Test
     void removeReturnsTheFinalValueAndDropsTheEntry() {
-        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+        RankingEngine<String, Integer> engine = pointsEngine();
         engine.add("alice", 10);
         engine.add("bob", 20);
 
@@ -130,15 +128,14 @@ class RankingEngineTest {
 
     @Test
     void removingAnUnknownKeyIsRejected() {
-        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+        RankingEngine<String, Integer> engine = pointsEngine();
 
         assertThrows(EntryNotFoundException.class, () -> engine.remove("ghost"));
     }
 
     @Test
     void aRemovedKeyCanBeAddedAgainAsTheMostRecentEntry() {
-        RankingEngine<String, Integer> engine =
-                new RankingEngine<>(HIGHEST_POINTS_FIRST.thenComparing(Orderings.mostRecentFirst()));
+        RankingEngine<String, Integer> engine = pointsThenRecencyEngine();
         engine.add("alice", 0);
         engine.add("bob", 0);
 
@@ -146,6 +143,14 @@ class RankingEngineTest {
         engine.add("alice", 0);
 
         assertEquals(List.of("alice", "bob"), keys(engine.ranking()));
+    }
+
+    private static RankingEngine<String, Integer> pointsEngine() {
+        return new RankingEngine<>(HIGHEST_POINTS_FIRST);
+    }
+
+    private static RankingEngine<String, Integer> pointsThenRecencyEngine() {
+        return new RankingEngine<>(HIGHEST_POINTS_FIRST.thenComparing(Orderings.mostRecentFirst()));
     }
 
     private static List<String> keys(List<RankedEntry<String, Integer>> ranking) {

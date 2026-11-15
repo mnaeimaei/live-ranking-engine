@@ -26,26 +26,28 @@ public final class RankingEngine<K, V> {
     }
 
     public V update(K key, UnaryOperator<V> change) {
-        RankedEntry<K, V> current = entries.get(key);
-        if (current == null) {
-            throw new EntryNotFoundException(key);
-        }
+        RankedEntry<K, V> current = requireEntry(key);
         RankedEntry<K, V> updated = current.withValue(change.apply(current.value()));
         entries.put(key, updated);
         return updated.value();
     }
 
     public V remove(K key) {
-        RankedEntry<K, V> removed = entries.remove(key);
-        if (removed == null) {
-            throw new EntryNotFoundException(key);
-        }
-        return removed.value();
+        requireEntry(key);
+        return entries.remove(key).value();
     }
 
     public List<RankedEntry<K, V>> ranking() {
         List<RankedEntry<K, V>> ranking = new ArrayList<>(entries.values());
         ranking.sort(ordering);
         return ranking;
+    }
+
+    private RankedEntry<K, V> requireEntry(K key) {
+        RankedEntry<K, V> entry = entries.get(key);
+        if (entry == null) {
+            throw new EntryNotFoundException(key);
+        }
+        return entry;
     }
 }
