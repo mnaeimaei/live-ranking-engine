@@ -195,6 +195,45 @@ class RankingEngineTest {
         assertEquals(Optional.of(10), engine.find("alice"));
     }
 
+    @Test
+    void admissionRulesCanRejectNewEntries() {
+        AdmissionRule<String, Integer> atMostTwoEntries = (key, value, live) -> {
+            if (live.size() >= 2) {
+                throw new EntryRejectedException("leaderboard is full, cannot admit " + key);
+            }
+        };
+        RankingEngine<String, Integer> engine = RankingEngine.orderedBy(HIGHEST_POINTS_FIRST)
+                .withAdmissionRule(atMostTwoEntries)
+                .build();
+        engine.add("alice", 10);
+        engine.add("bob", 20);
+
+        EntryRejectedException thrown =
+                assertThrows(EntryRejectedException.class, () -> engine.add("carol", 30));
+
+        assertEquals("leaderboard is full, cannot admit carol", thrown.getMessage());
+        assertEquals(List.of("bob", "alice"), keys(engine.ranking()));
+    }
+
+    @Test
+    void admissionRulesSeeTheValuesThatAreCurrentlyLive() {
+        AdmissionRule<String, Integer> uniquePoints = (key, value, live) -> {
+            if (live.contains(value)) {
+                throw new EntryRejectedException("points already taken: " + value);
+            }
+        };
+        RankingEngine<String, Integer> engine = RankingEngine.orderedBy(HIGHEST_POINTS_FIRST)
+                .withAdmissionRule(uniquePoints)
+                .build();
+        engine.add("alice", 10);
+
+        assertThrows(EntryRejectedException.class, () -> engine.add("bob", 10));
+        engine.remove("alice");
+        engine.add("bob", 10);
+
+        assertEquals(List.of("bob"), keys(engine.ranking()));
+    }
+
     private static RankingEngine<String, Integer> pointsEngine() {
         return new RankingEngine<>(HIGHEST_POINTS_FIRST);
     }
