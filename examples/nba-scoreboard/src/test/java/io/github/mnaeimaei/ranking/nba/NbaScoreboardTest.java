@@ -75,6 +75,22 @@ class NbaScoreboardTest {
                 "Lakers 102 - Celtics 98"), lines());
     }
 
+    @Test
+    void finishingAGameReturnsTheFinalScoreAndRemovesIt() {
+        start("Lakers", "Celtics", 102, 98);
+        start("Bulls", "Heat", 90, 85);
+
+        Game finalGame = scoreboard.finishGame(LAKERS, CELTICS);
+
+        assertEquals("Lakers 102 - Celtics 98", finalGame.display());
+        assertEquals(List.of("Bulls 90 - Heat 85"), lines());
+    }
+
+    @Test
+    void finishingAGameThatIsNotLiveIsRejected() {
+        assertThrows(EntryNotFoundException.class, () -> scoreboard.finishGame(LAKERS, CELTICS));
+    }
+
     private void start(String home, String away, int homePoints, int awayPoints) {
         scoreboard.startGame(new Team(home), new Team(away));
         scoreboard.updateScore(new Team(home), new Team(away), homePoints, awayPoints);
