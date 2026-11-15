@@ -30,8 +30,9 @@ class NbaScoreboardTest {
 
     @Test
     void aStartedGameAppearsAtZeroZero() {
-        scoreboard.startGame(LAKERS, CELTICS);
+        Game started = scoreboard.startGame(LAKERS, CELTICS);
 
+        assertEquals(new Game(new Fixture(LAKERS, CELTICS), Score.ZERO), started);
         assertEquals(List.of("Lakers 0 - Celtics 0"), lines());
     }
 
