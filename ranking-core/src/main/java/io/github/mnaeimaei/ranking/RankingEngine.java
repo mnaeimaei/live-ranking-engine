@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 public final class RankingEngine<K, V> {
 
@@ -19,6 +20,13 @@ public final class RankingEngine<K, V> {
 
     public void add(K key, V value) {
         entries.put(key, new RankedEntry<>(key, value, nextSequence++));
+    }
+
+    public V update(K key, UnaryOperator<V> change) {
+        RankedEntry<K, V> current = entries.get(key);
+        RankedEntry<K, V> updated = current.withValue(change.apply(current.value()));
+        entries.put(key, updated);
+        return updated.value();
     }
 
     public List<RankedEntry<K, V>> ranking() {
