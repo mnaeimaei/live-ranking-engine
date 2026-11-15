@@ -56,6 +56,16 @@ class RankingEngineTest {
         assertEquals(List.of("carol", "bob", "alice", "dave"), keys(engine.ranking()));
     }
 
+    @Test
+    void rankingIsDeterministicWhenTheOrderingReportsATie() {
+        RankingEngine<String, Integer> engine = new RankingEngine<>((a, b) -> 0);
+        List<String> insertionOrder = List.of("zed", "amy", "kim", "bo", "lee", "ann", "max", "eve");
+
+        insertionOrder.forEach(name -> engine.add(name, 1));
+
+        assertEquals(insertionOrder, keys(engine.ranking()));
+    }
+
     private static List<String> keys(List<RankedEntry<String, Integer>> ranking) {
         return ranking.stream().map(RankedEntry::key).toList();
     }
