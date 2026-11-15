@@ -43,6 +43,19 @@ class RankingEngineTest {
         assertEquals(List.of("bob", "carol", "alice"), keys(engine.ranking()));
     }
 
+    @Test
+    void mostRecentFirstBreaksTiesInFavourOfTheLatestAddedEntry() {
+        RankingEngine<String, Integer> engine =
+                new RankingEngine<>(HIGHEST_POINTS_FIRST.thenComparing(Orderings.mostRecentFirst()));
+
+        engine.add("alice", 20);
+        engine.add("bob", 20);
+        engine.add("carol", 20);
+        engine.add("dave", 5);
+
+        assertEquals(List.of("carol", "bob", "alice", "dave"), keys(engine.ranking()));
+    }
+
     private static List<String> keys(List<RankedEntry<String, Integer>> ranking) {
         return ranking.stream().map(RankedEntry::key).toList();
     }
