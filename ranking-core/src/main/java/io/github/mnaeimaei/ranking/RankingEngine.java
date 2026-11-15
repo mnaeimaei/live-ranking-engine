@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -15,11 +16,14 @@ public final class RankingEngine<K, V> {
     private long nextSequence = 0;
 
     public RankingEngine(Comparator<? super RankedEntry<K, V>> ordering) {
+        Objects.requireNonNull(ordering, "ordering");
         Comparator<RankedEntry<K, V>> callerOrdering = ordering::compare;
         this.ordering = callerOrdering.thenComparingLong(RankedEntry::sequence);
     }
 
     public void add(K key, V value) {
+        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(value, "value");
         if (entries.containsKey(key)) {
             throw new EntryAlreadyExistsException(key);
         }
@@ -27,8 +31,10 @@ public final class RankingEngine<K, V> {
     }
 
     public V update(K key, UnaryOperator<V> change) {
+        Objects.requireNonNull(change, "change");
         RankedEntry<K, V> current = requireEntry(key);
-        RankedEntry<K, V> updated = current.withValue(change.apply(current.value()));
+        V newValue = Objects.requireNonNull(change.apply(current.value()), "updated value");
+        RankedEntry<K, V> updated = current.withValue(newValue);
         entries.put(key, updated);
         return updated.value();
     }
