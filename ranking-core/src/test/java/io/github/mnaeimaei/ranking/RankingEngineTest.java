@@ -145,6 +145,19 @@ class RankingEngineTest {
         assertEquals(List.of("alice", "bob"), keys(engine.ranking()));
     }
 
+    @Test
+    void rankingIsAnUnmodifiableSnapshot() {
+        RankingEngine<String, Integer> engine = pointsEngine();
+        engine.add("alice", 10);
+
+        List<RankedEntry<String, Integer>> snapshot = engine.ranking();
+        engine.update("alice", points -> 99);
+        engine.add("bob", 50);
+
+        assertEquals(List.of(new RankedEntry<>("alice", 10, 0)), snapshot);
+        assertThrows(UnsupportedOperationException.class, () -> snapshot.clear());
+    }
+
     private static RankingEngine<String, Integer> pointsEngine() {
         return new RankingEngine<>(HIGHEST_POINTS_FIRST);
     }
