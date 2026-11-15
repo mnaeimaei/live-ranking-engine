@@ -19,11 +19,17 @@ public final class RankingEngine<K, V> {
     }
 
     public void add(K key, V value) {
+        if (entries.containsKey(key)) {
+            throw new EntryAlreadyExistsException(key);
+        }
         entries.put(key, new RankedEntry<>(key, value, nextSequence++));
     }
 
     public V update(K key, UnaryOperator<V> change) {
         RankedEntry<K, V> current = entries.get(key);
+        if (current == null) {
+            throw new EntryNotFoundException(key);
+        }
         RankedEntry<K, V> updated = current.withValue(change.apply(current.value()));
         entries.put(key, updated);
         return updated.value();
