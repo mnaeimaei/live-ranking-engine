@@ -14,6 +14,7 @@
 
     <modules>
         <module>ranking-core</module>
+        <module>examples/nba-scoreboard</module>
     </modules>
 
     <properties>
