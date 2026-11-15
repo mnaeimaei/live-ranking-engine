@@ -66,6 +66,31 @@ class RankingEngineTest {
         assertEquals(insertionOrder, keys(engine.ranking()));
     }
 
+    @Test
+    void updateChangesTheValueAndReranks() {
+        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+        engine.add("alice", 10);
+        engine.add("bob", 12);
+
+        Integer updated = engine.update("alice", points -> points + 5);
+
+        assertEquals(15, updated);
+        assertEquals(List.of("alice", "bob"), keys(engine.ranking()));
+        assertEquals(15, engine.ranking().get(0).value());
+    }
+
+    @Test
+    void updateKeepsTheOriginalInsertionSequence() {
+        RankingEngine<String, Integer> engine =
+                new RankingEngine<>(HIGHEST_POINTS_FIRST.thenComparing(Orderings.mostRecentFirst()));
+        engine.add("alice", 10);
+        engine.add("bob", 20);
+
+        engine.update("alice", points -> 20);
+
+        assertEquals(List.of("bob", "alice"), keys(engine.ranking()));
+    }
+
     private static List<String> keys(List<RankedEntry<String, Integer>> ranking) {
         return ranking.stream().map(RankedEntry::key).toList();
     }
