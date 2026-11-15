@@ -1,6 +1,5 @@
 package io.github.mnaeimaei.ranking;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -38,9 +37,7 @@ public final class RankingEngine<K, V> {
     }
 
     public List<RankedEntry<K, V>> ranking() {
-        List<RankedEntry<K, V>> ranking = new ArrayList<>(entries.values());
-        ranking.sort(ordering);
-        return ranking;
+        return entries.values().stream().sorted(ordering).toList();
     }
 
     private RankedEntry<K, V> requireEntry(K key) {
