@@ -1,5 +1,6 @@
 package io.github.mnaeimaei.ranking.nba;
 
+import io.github.mnaeimaei.ranking.EntryAlreadyExistsException;
 import io.github.mnaeimaei.ranking.EntryNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -89,6 +90,35 @@ class NbaScoreboardTest {
     @Test
     void finishingAGameThatIsNotLiveIsRejected() {
         assertThrows(EntryNotFoundException.class, () -> scoreboard.finishGame(LAKERS, CELTICS));
+    }
+
+    @Test
+    void startingTheSameGameTwiceIsRejected() {
+        scoreboard.startGame(LAKERS, CELTICS);
+
+        assertThrows(EntryAlreadyExistsException.class, () -> scoreboard.startGame(LAKERS, CELTICS));
+    }
+
+    @Test
+    void aTeamCannotPlayTwoLiveGamesAtOnce() {
+        scoreboard.startGame(LAKERS, CELTICS);
+
+        TeamAlreadyPlayingException thrown = assertThrows(TeamAlreadyPlayingException.class,
+                () -> scoreboard.startGame(new Team("Heat"), LAKERS));
+
+        assertEquals(LAKERS, thrown.team());
+        assertThrows(TeamAlreadyPlayingException.class, () -> scoreboard.startGame(CELTICS, LAKERS));
+        assertEquals(List.of("Lakers 0 - Celtics 0"), lines());
+    }
+
+    @Test
+    void aTeamCanPlayAgainOnceItsGameIsFinished() {
+        scoreboard.startGame(LAKERS, CELTICS);
+        scoreboard.finishGame(LAKERS, CELTICS);
+
+        scoreboard.startGame(CELTICS, LAKERS);
+
+        assertEquals(List.of("Celtics 0 - Lakers 0"), lines());
     }
 
     private void start(String home, String away, int homePoints, int awayPoints) {
