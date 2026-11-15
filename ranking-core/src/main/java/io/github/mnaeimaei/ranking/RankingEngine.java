@@ -16,6 +16,23 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+/**
+ * A thread-safe, in-memory collection of live entries that is always available in ranked order.
+ *
+ * <p>The engine knows nothing about the domain it ranks. Callers supply:
+ * <ul>
+ *   <li>an <b>ordering</b> over {@link RankedEntry} &mdash; usually composed from {@link Orderings};</li>
+ *   <li>optional {@link AdmissionRule}s that may veto new entries (e.g. "a team can only play one game at a time").</li>
+ * </ul>
+ * Whenever the ordering reports a tie, entries fall back to insertion order, so a ranking is always deterministic.
+ *
+ * <p><b>Concurrency.</b> Mutations take a write lock; admission rules and update functions run under that lock,
+ * atomically with the change they guard. Reads take a read lock and return immutable snapshots.
+ * Admission rules and update functions should therefore be fast and must not block.
+ *
+ * @param <K> the key that identifies an entry
+ * @param <V> the ranked value; should be immutable
+ */
 public final class RankingEngine<K, V> {
 
     private final Comparator<RankedEntry<K, V>> ordering;
@@ -25,6 +42,11 @@ public final class RankingEngine<K, V> {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private long nextSequence = 0;
 
+    /**
+     * Creates an engine without admission rules.
+     *
+     * @param ordering how entries are ranked, best first
+     */
     public RankingEngine(Comparator<? super RankedEntry<K, V>> ordering) {
         this(ordering, List.of());
     }
@@ -36,10 +58,26 @@ public final class RankingEngine<K, V> {
         this.admissionRules = List.copyOf(admissionRules);
     }
 
+    /**
+     * Starts building an engine that ranks entries with {@code ordering}, best first.
+     *
+     * @param ordering how entries are ranked
+     * @param <K>      key type
+     * @param <V>      value type
+     * @return a builder for further configuration
+     */
     public static <K, V> Builder<K, V> orderedBy(Comparator<? super RankedEntry<K, V>> ordering) {
         return new Builder<>(ordering);
     }
 
+    /**
+     * Adds a new entry. It becomes the most recent entry for {@link Orderings#mostRecentFirst()}.
+     *
+     * @param key   identifies the entry
+     * @param value the initial value
+     * @throws EntryAlreadyExistsException if {@code key} is already live
+     * @throws EntryRejectedException      if an admission rule vetoes the entry
+     */
     public void add(K key, V value) {
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(value, "value");
@@ -54,6 +92,15 @@ public final class RankingEngine<K, V> {
         });
     }
 
+    /**
+     * Atomically replaces the value of a live entry with {@code change.apply(current)}.
+     * The entry keeps its original insertion sequence.
+     *
+     * @param key    identifies the entry
+     * @param change computes the new value from the current one; must not return {@code null}
+     * @return the new value
+     * @throws EntryNotFoundException if {@code key} is not live
+     */
     public V update(K key, UnaryOperator<V> change) {
         Objects.requireNonNull(change, "change");
         return write(() -> {
@@ -64,6 +111,13 @@ public final class RankingEngine<K, V> {
         });
     }
 
+    /**
+     * Removes a live entry.
+     *
+     * @param key identifies the entry
+     * @return the entry's final value
+     * @throws EntryNotFoundException if {@code key} is not live
+     */
     public V remove(K key) {
         return write(() -> {
             requireEntry(key);
@@ -71,10 +125,17 @@ public final class RankingEngine<K, V> {
         });
     }
 
+    /**
+     * @return an immutable snapshot of all live entries, best first
+     */
     public List<RankedEntry<K, V>> ranking() {
         return read(() -> sorted().toList());
     }
 
+    /**
+     * @param limit maximum number of entries to return; must not be negative
+     * @return an immutable snapshot of the best {@code limit} entries
+     */
     public List<RankedEntry<K, V>> top(int limit) {
         if (limit < 0) {
             throw new IllegalArgumentException("limit must not be negative: " + limit);
@@ -82,10 +143,17 @@ public final class RankingEngine<K, V> {
         return read(() -> sorted().limit(limit).toList());
     }
 
+    /**
+     * @param key identifies the entry
+     * @return the current value for {@code key}, or empty if it is not live
+     */
     public Optional<V> find(K key) {
         return read(() -> Optional.ofNullable(entries.get(key)).map(RankedEntry::value));
     }
 
+    /**
+     * @return the number of live entries
+     */
     public int size() {
         return read(entries::size);
     }
@@ -144,6 +212,12 @@ public final class RankingEngine<K, V> {
         }
     }
 
+    /**
+     * Fluent configuration for a {@link RankingEngine}.
+     *
+     * @param <K> key type
+     * @param <V> value type
+     */
     public static final class Builder<K, V> {
 
         private final Comparator<? super RankedEntry<K, V>> ordering;
@@ -153,11 +227,20 @@ public final class RankingEngine<K, V> {
             this.ordering = Objects.requireNonNull(ordering, "ordering");
         }
 
+        /**
+         * Adds a rule that every new entry must pass. Rules run in the order they were added.
+         *
+         * @param rule the rule
+         * @return this builder
+         */
         public Builder<K, V> withAdmissionRule(AdmissionRule<K, V> rule) {
             admissionRules.add(Objects.requireNonNull(rule, "rule"));
             return this;
         }
 
+        /**
+         * @return a new, empty engine
+         */
         public RankingEngine<K, V> build() {
             return new RankingEngine<>(ordering, admissionRules);
         }
