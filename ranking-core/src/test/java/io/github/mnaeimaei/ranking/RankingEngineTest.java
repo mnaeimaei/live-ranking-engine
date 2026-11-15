@@ -116,6 +116,38 @@ class RankingEngineTest {
         assertTrue(engine.ranking().isEmpty());
     }
 
+    @Test
+    void removeReturnsTheFinalValueAndDropsTheEntry() {
+        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+        engine.add("alice", 10);
+        engine.add("bob", 20);
+
+        Integer removed = engine.remove("alice");
+
+        assertEquals(10, removed);
+        assertEquals(List.of("bob"), keys(engine.ranking()));
+    }
+
+    @Test
+    void removingAnUnknownKeyIsRejected() {
+        RankingEngine<String, Integer> engine = new RankingEngine<>(HIGHEST_POINTS_FIRST);
+
+        assertThrows(EntryNotFoundException.class, () -> engine.remove("ghost"));
+    }
+
+    @Test
+    void aRemovedKeyCanBeAddedAgainAsTheMostRecentEntry() {
+        RankingEngine<String, Integer> engine =
+                new RankingEngine<>(HIGHEST_POINTS_FIRST.thenComparing(Orderings.mostRecentFirst()));
+        engine.add("alice", 0);
+        engine.add("bob", 0);
+
+        engine.remove("alice");
+        engine.add("alice", 0);
+
+        assertEquals(List.of("alice", "bob"), keys(engine.ranking()));
+    }
+
     private static List<String> keys(List<RankedEntry<String, Integer>> ranking) {
         return ranking.stream().map(RankedEntry::key).toList();
     }
